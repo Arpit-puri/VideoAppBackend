@@ -51,32 +51,34 @@ const userShema = new mongoose.Schema(
 );
 
 //avoid using arrow functiona s .this method cannot be used with it
-userShema.pre("save", async function (req, res, next) {
+userShema.pre("save", async function (next) {
   if (!this.isModified("password")) {
     /**this.isModified is inbuild function that will insure that
      * this pre hook will not run password is not changed */
     next();
   }
   const salt = await bcrypt.genSalt(10);
-  this.password = bcrypt.hash(this.password, salt);
+  this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
 userShema.methods.isPasswordCorrect = async function (password) {
-  return await bcrypt.compare(this.password, password);
+  // console.log(password);
+  return await bcrypt.compare(password, this.password);
 };
 
-userShema.methods.generateAccessToken =function () {
-  return jwt.sign(
+userShema.methods.generateAccessToken = function () {
+  const token = jwt.sign(
     { id: this._id, email: this.email, userName: this.userName },
     process.env.ACCESS_TOKEN_SECRET,
     { expiresIn: process.env.ACCESS_TOKEN_EXPIRY },
   );
+  return token;
 };
-userShema.methods.generateRefreshToken = function () { return jwt.sign(
-    { id: this._id},
-    process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: process.env.REFRESH_TOKEN_EXPIRY },
-  );};
+userShema.methods.generateRefreshToken = function () {
+  return jwt.sign({ id: this._id }, process.env.REFRESH_TOKEN_SECRET, {
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
+  });
+};
 
 exports.User = mongoose.model("User", userShema);
