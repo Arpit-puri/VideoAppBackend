@@ -3,6 +3,8 @@ const ApiError = require("../utils/apirError");
 const { User } = require("../models/user.model");
 const uploadCloudinary = require("../utils/Cloudinary");
 const apiResonse = require("../utils/apiresponse");
+const jwt = require("jsonwebtoken");
+const ApiResponse = require("../utils/apiresponse");
 
 const generateAccessTokenandRefreshTokens = async (userId) => {
   try {
@@ -10,7 +12,7 @@ const generateAccessTokenandRefreshTokens = async (userId) => {
 
     const accessToken = await user.generateAccessToken();
     const refreshToken = await user.generateRefreshToken();
-    console.log(refreshToken);
+
     user.refreshToken = refreshToken;
     await user.save({ ValidityState: false });
     return { accessToken, refreshToken };
@@ -72,7 +74,7 @@ exports.registerUser = asyncHandler(async (req, res) => {
 
 exports.loginUser = asyncHandler(async (req, res) => {
   const { email, password, userName } = req.body;
-  console.log(req.body);
+
   if (!userName && !email) {
     throw new ApiError(400, "Username or Email is required.");
   }
@@ -135,8 +137,48 @@ exports.logoutUser = asyncHandler(async (req, res) => {
     secure: true,
   };
 
-  return res(200)
+  return res
+    .status(200)
     .clearCookie("accessToken", option)
     .clearCookie("refreshToken", option)
     .json(new apiResonse(200, {}, "Logout successfull"));
+});
+
+exports.refreshAccessToken = asyncHandler(async (req, res) => {
+  const { refreshToken } = req.cookies;
+
+  if (!refreshToken) {
+    throw new ApiError(401, "Unauthorized access");
+  }
+
+  const decodedToken = jwt.verify(
+    refreshToken,
+    process.env.REFRESH_TOKEN_SECRET,
+  );
+
+  const user = await User.findById(decodedToken?.id);
+  if (!user) {
+    throw new ApiError(401, "Invalid Token");
+  }
+ 
+  if (refreshToken !== user.refreshToken) {
+    throw new ApiError(401, "Token expired or used");
+  }
+  //can be declared globally due to multiple use
+  const option = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  const Token = await generateAccessTokenandRefreshTokens(user._id);
+  return res
+    .status(200)
+    .cookie("accessToken", Token.accessToken, option)
+    .cookie("refreshToken", Token.refreshToken, option)
+    .json(
+      new ApiResponse(200, {
+        accessToken: Token.accessToken,
+        refreshToken: Token.refreshToken,
+      }),
+    );
 });
