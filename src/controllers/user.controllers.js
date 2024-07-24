@@ -14,7 +14,7 @@ const generateAccessTokenandRefreshTokens = async (userId) => {
     const refreshToken = await user.generateRefreshToken();
 
     user.refreshToken = refreshToken;
-    await user.save({ ValidityState: false });
+    await user.save({ validateBeforeSave: false });
     return { accessToken, refreshToken };
   } catch (error) {
     throw new ApiError(500, "Something went wromg while generating user");
@@ -160,7 +160,7 @@ exports.refreshAccessToken = asyncHandler(async (req, res) => {
   if (!user) {
     throw new ApiError(401, "Invalid Token");
   }
- 
+
   if (refreshToken !== user.refreshToken) {
     throw new ApiError(401, "Token expired or used");
   }
@@ -182,3 +182,28 @@ exports.refreshAccessToken = asyncHandler(async (req, res) => {
       }),
     );
 });
+
+exports.changeCurrentUserPassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword, confirmPassword } = req.body;
+
+  if (!oldPassword || !newPassword || !confirmPassword) {
+    throw new ApiError(400, "Please fill all the fields");
+  }
+  if (newPassword !== confirmPassword) {
+    throw new ApiError(400, "Password and confirm password does not match");
+  }
+  
+  const user = await User.findById(req.user?._id);
+ 
+  const passwordCheck = await user.isPasswordCorrect(oldPassword);
+  if (!passwordCheck) {
+    throw new ApiError(400, "Old password is incorrect");
+  }
+
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Password changed successfully"));
+});
+
