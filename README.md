@@ -12,22 +12,16 @@ Both should be installed and make sure mongodb is running.
 git clone https://github.com/Arpit-puri/CHIT-CHAT
 cd chat-app-react-nodejs
 ```
-Now rename env files from .env.example to .env
+Now construct .env file
 ```shell
-cd public
-mv .env.example .env
-cd ..
-cd server
+
+cd src
 mv .env.example .env
 cd ..
 ```
 
 Now install the dependencies
 ```shell
-cd server
-npm i
-cd ..
-cd public
 npm i
 ```
 We are almost done, Now just start the development server.
@@ -36,6 +30,6 @@ For Backend.
 
 Open another terminal in folder, Also make sure mongodb is running in background.
 ```shell
-cd server
-npm start
+cd src
+node index.js
 ```
