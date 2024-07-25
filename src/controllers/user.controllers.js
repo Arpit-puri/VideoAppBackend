@@ -192,9 +192,9 @@ exports.changeCurrentUserPassword = asyncHandler(async (req, res) => {
   if (newPassword !== confirmPassword) {
     throw new ApiError(400, "Password and confirm password does not match");
   }
-  
+
   const user = await User.findById(req.user?._id);
- 
+
   const passwordCheck = await user.isPasswordCorrect(oldPassword);
   if (!passwordCheck) {
     throw new ApiError(400, "Old password is incorrect");
@@ -207,3 +207,73 @@ exports.changeCurrentUserPassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Password changed successfully"));
 });
 
+exports.updateAccountDetails = asyncHandler(async (req, res) => {
+  const { fullName, email } = req.body;
+  if (!(fullName && email)) {
+    throw new ApiError(400, "Please fill all the fields");
+  }
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    { $set: { fullName, email } },
+    { new: true },
+  ).select("-password -avatar -coverImage -refreshToken");
+  return res
+    .status(200)
+    .json(new apiResonse(200, user, "Account updated Successfully"));
+});
+
+exports.updateUserAvatar = asyncHandler(async (req, res) => {
+  const avatarLocalPath = req.file?.path;
+  if (!avatarLocalPath) {
+    throw new ApiError(400, "Avatar image not found");
+  }
+
+  const avatar = await uploadCloudinary(avatarLocalPath);
+  if (!avatar.url) {
+    throw new ApiError(400, "Avatar image error while uploading avatar");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: avatar.url,
+      },
+    },
+    {
+      new: true,
+    },
+  ).select("-password -refreshToken");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Image updated successfully"));
+});
+
+exports.updateUserCoverImage = asyncHandler(async (req, res) => {
+  const coverImageLocalPath = req.file?.path;
+  if (!coverImageLocalPath) {
+    throw new ApiError(400, "cover Image not found");
+  }
+
+  const coverImage = await uploadCloudinary(coverImageLocalPath);
+  if (!coverImage.url) {
+    throw new ApiError(400, "cover Image error while uploading avatar");
+  }
+
+  await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: coverImage.url,
+      },
+    },
+    {
+      new: true,
+    },
+  ).select("-password -refreshToken");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Image updated successfully"));
+});
