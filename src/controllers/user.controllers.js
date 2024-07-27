@@ -251,7 +251,7 @@ exports.updateUserAvatar = asyncHandler(async (req, res) => {
 });
 
 exports.updateUserCoverImage = asyncHandler(async (req, res) => {
-  const coverImageLocalPath = req.file?.path;
+  const coverImageLocalPath =await req.files?.coverImage?.[0]?.path;
   if (!coverImageLocalPath) {
     throw new ApiError(400, "cover Image not found");
   }
@@ -261,7 +261,10 @@ exports.updateUserCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(400, "cover Image error while uploading avatar");
   }
 
-  await User.findByIdAndUpdate(
+  // const oldCoverImage = await User.findById(req.user?._id);
+  // console.log(oldCoverImage.coverImage);
+
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
