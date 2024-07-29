@@ -351,5 +351,5 @@ exports.getUserChannelProfile = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, channel, "Details send successfully"));
+    .json(new ApiResponse(200, channel[0], "Details send successfully"));
 });
