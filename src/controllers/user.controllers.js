@@ -1,5 +1,4 @@
 const { asyncHandler } = require("../utils/asyncHandler");
-const { mongoose } = require("mongoose");
 const ApiError = require("../utils/apirError");
 const { User } = require("../models/user.model");
 const uploadCloudinary = require("../utils/Cloudinary");

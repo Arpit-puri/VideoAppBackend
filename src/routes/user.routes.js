@@ -10,6 +10,7 @@ const {
   updateUserCoverImage,
   getUserChannelProfile,
 } = require("../controllers/user.controllers");
+
 const { verifyJWT } = require("../middleware/auth");
 const upload = require("../middleware/multer");
 
