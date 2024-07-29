@@ -1,4 +1,5 @@
 const { asyncHandler } = require("../utils/asyncHandler");
+const { mongoose } = require("mongoose");
 const ApiError = require("../utils/apirError");
 const { User } = require("../models/user.model");
 const uploadCloudinary = require("../utils/Cloudinary");
@@ -251,7 +252,7 @@ exports.updateUserAvatar = asyncHandler(async (req, res) => {
 });
 
 exports.updateUserCoverImage = asyncHandler(async (req, res) => {
-  const coverImageLocalPath =await req.files?.coverImage?.[0]?.path;
+  const coverImageLocalPath = await req.files?.coverImage?.[0]?.path;
   if (!coverImageLocalPath) {
     throw new ApiError(400, "cover Image not found");
   }
@@ -279,4 +280,76 @@ exports.updateUserCoverImage = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, user, "Image updated successfully"));
+});
+
+exports.getUserChannelProfile = asyncHandler(async (req, res) => {
+  const { userName } = req.query;
+
+  if (!userName?.trim()) {
+    throw new ApiError(400, "User Name is Missing");
+  }
+  // User.find({userName}) instead of doing this we will use aggrigation pipline
+
+  const channel = await User.aggregate([
+    {
+      $match: {
+        userName: userName.toLowerCase(),
+      },
+    },
+    {
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribers",
+      },
+    },
+    {
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "subscribedTo",
+      },
+    },
+    {
+      $addFields: {
+        subscriberCount: {
+          $size: "$subscribers",
+        },
+        channelsubscribedToCount: {
+          $size: "$subscribedTo",
+        },
+        isSubscribed: {
+          $cond: {
+            if: {
+              $in: [req.user._id, "$subscribers.subscriber"],
+            },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        fullName: 1,
+        userName: 1,
+        subscriberCount: 1,
+        channelsubscribedToCount: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImage: 1,
+        email: 1,
+      },
+    },
+  ]);
+  // console.log(channel);
+  if (!channel || channel.length === 0) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, channel, "Details send successfully"));
 });

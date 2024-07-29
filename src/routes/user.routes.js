@@ -8,6 +8,7 @@ const {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
+  getUserChannelProfile,
 } = require("../controllers/user.controllers");
 const { verifyJWT } = require("../middleware/auth");
 const upload = require("../middleware/multer");
@@ -36,12 +37,16 @@ router.route("/change-password").patch(verifyJWT, changeCurrentUserPassword);
 router.route("/change-credentials").patch(verifyJWT, updateAccountDetails);
 router.route("/update-avatar").patch(verifyJWT, updateUserAvatar);
 router.route("/update-coverImage").patch(
-  upload.fields([{
-    name: "coverImage",
-    maxCount: 1,
-  }]),
+  upload.fields([
+    {
+      name: "coverImage",
+      maxCount: 1,
+    },
+  ]),
   verifyJWT,
   updateUserCoverImage,
 );
+
+router.route("/get-userInfo").get(verifyJWT, getUserChannelProfile);
 
 module.exports = router;
