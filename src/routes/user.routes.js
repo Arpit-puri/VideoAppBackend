@@ -9,6 +9,7 @@ const {
   updateUserAvatar,
   updateUserCoverImage,
   getUserChannelProfile,
+  getWatchHistory
 } = require("../controllers/user.controllers");
 
 const { verifyJWT } = require("../middleware/auth");
@@ -49,5 +50,6 @@ router.route("/update-coverImage").patch(
 );
 
 router.route("/get-userInfo").get(verifyJWT, getUserChannelProfile);
+router.route("/watch-history").get(verifyJWT, getWatchHistory);
 
 module.exports = router;

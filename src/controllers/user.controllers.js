@@ -5,6 +5,7 @@ const uploadCloudinary = require("../utils/Cloudinary");
 const apiResonse = require("../utils/apiresponse");
 const jwt = require("jsonwebtoken");
 const ApiResponse = require("../utils/apiresponse");
+const { default: mongoose } = require("mongoose");
 
 const generateAccessTokenandRefreshTokens = async (userId) => {
   try {
@@ -351,4 +352,46 @@ exports.getUserChannelProfile = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, channel[0], "Details send successfully"));
+});
+
+exports.getWatchHistory = asyncHandler(async (req, res) => {
+  const user = await User.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user._id),
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+            },
+          },
+          {
+            $addFields: {
+              owner: { $arrayElemAt: ["$owner", 0] },
+            },
+          },
+        ],
+      },
+    },
+    {
+      $project: {
+        password: 0,
+        refreshToken: 0,
+        accessToken: 0,
+      },
+    },
+  ]);
+
+  return res.status(200).json(new ApiResponse(200, user, "Watch history send"));
 });
