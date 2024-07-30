@@ -130,7 +130,10 @@ exports.loginUser = asyncHandler(async (req, res) => {
 exports.logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user.id,
-    { $set: { refreshToken: undefined } },
+    // { $set: { refreshToken: undefined } }
+    {
+      $unset: { refreshToken: 1 }, //it works same as set to remove a field from document
+    },
     { new: true },
   );
   const option = {
